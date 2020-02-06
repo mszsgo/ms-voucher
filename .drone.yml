@@ -1,0 +1,45 @@
+---
+kind: pipeline
+type: docker
+name: proxy
+
+steps:
+  # Build Project
+  - name: build
+    image: golang:1.13-alpine
+    environment:
+      GOPROXY: https://goproxy.cn
+    commands:
+      - pwd && go build && ls -ltrh
+  # http://plugins.drone.io/appleboy/drone-scp/
+  - name: scp
+    image: appleboy/drone-scp
+    settings:
+      host:
+        from_secret: sshhost
+      port:
+        from_secret: sshport
+      username:
+        from_secret: sshname
+      password:
+        from_secret: sshpass
+      source: ./
+      target: /drone/voucher/
+  # http://plugins.drone.io/appleboy/drone-ssh/
+  - name: deploy
+    image: appleboy/drone-ssh
+    settings:
+      host:
+        from_secret: sshhost
+      port:
+        from_secret: sshport
+      username:
+        from_secret: sshname
+      password:
+        from_secret: sshpass
+      script:
+        - sh /drone/voucher/script.sh
+
+trigger:
+  branch:
+    - master
